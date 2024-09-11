@@ -59,7 +59,7 @@ pipeline{
                 steps{
                     echo "Building the docker file..."
                     sshagent(['ssh']){
-                    sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "export PATH=\$PATH:/opt/gradle/gradle-7.1.1/bin && cd devsecops && docker build -t devsecops . && docker tag devsecops:latest $DOCKERHUB_USER/devsecops:latest"'
+                    sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.170.225.76 "export PATH=\$PATH:/opt/gradle/gradle-7.1.1/bin && cd devsecops && docker build -t devsecops . && docker tag devsecops:latest $DOCKERHUB_USER/devsecops:latest"'
                     }
                 }   
             } 
@@ -68,7 +68,7 @@ pipeline{
 		        steps{
                     echo "Scanning the docker image using Trivy..."
                     sshagent(['ssh']){
-                        sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "trivy image $DOCKERHUB_USER/devsecops:latest"'
+                        sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.170.225.76 "trivy image $DOCKERHUB_USER/devsecops:latest"'
                     }
 		        }
 	        }  
@@ -78,11 +78,91 @@ pipeline{
                     echo "Pushing the image created to Dockerhub..."
                     sshagent(['ssh']){
                         withDockerRegistry([ credentialsId: "dockerhub-creds", url: ""]){ 
-                            sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "docker push $DOCKERHUB_USER/devsecops:latest && docker rmi -f devsecops:latest && docker rmi -f $DOCKERHUB_USER/devsecops:latest"'
+                            sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.170.225.76 "docker push $DOCKERHUB_USER/devsecops:latest && docker rmi -f devsecops:latest && docker rmi -f $DOCKERHUB_USER/devsecops:latest"'
                         }
                         }
                     }
+            }
+            stage('Creating Environments'){
+                // Creating namespaces for different environments on k8 cluster
+                steps{
+                    echo "Preping staging and Production environment..."
+                    sshagent(['k8-config']){
+                        sh 'ssh -o StrictHostKeyChecking=no ubuntu@13.60.248.189 "kubectl create ns staging && kubectl create ns prod"'
+                    }
+                }   
+            }
+                stage('Staging Deployment'){
+                //Application deploying on Staging server
+                steps{
+                    echo "Deploy image to Staging environment..."
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ubuntu@13.60.248.189 "kubectl create secret docker-registry regcred --docker-server=192.168.6.99:8082 --docker-username=$DOCKER_USERNAME --docker-password=$DOCKER_PASSWORD -n staging && kubectl create secret docker-registry regcred --docker-server=192.168.6.99:8082 --docker-username=$DOCKER_USERNAME --docker-password=$DOCKER_PASSWORD -n prod"
+                        """
+                    }
+                    kubernetesDeploy(
+                        configs: 'k8-staging.yml',
+                        kubeconfigId: 'k8-config',
+                        enableConfigSubstitution: true 
+                    )
                 }
+            }
+            stage('Web Application Scanning'){
+                //Web Application scanning using ZAP        
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+                steps{
+                    echo "Performing DAST Scan on app using ZAP tool..."
+                    catchError(buildResult: 'Success', stageResult: 'Success'){
+                    sleep time: 30, unit: 'SECONDS'
+                    sshagent(['dev'])
+                    {
+                        sh 'ssh -o StrictHostKeyChecking=no testing@192.168.6.99 "docker pull owasp/zap2docker-stable && docker run -t owasp/zap2docker-stable zap-baseline.py -t http://192.168.6.68:32000/VulnerableApp/ && docker rmi -f owasp/zap2docker-stable"'
+                    }
+                    }
+                }
+            }
+            stage('Production Approval'){
+                //Approval for deployment on production environment
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+                steps{              
+                    script {
+                        timeout(time: 10, unit: 'MINUTES'){
+                            input ('Deploy to Production?')
+                        }
+                    }        
+                } 
+            }
+            stage('Production Deployment'){
+                //Application deploying on production server
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+                steps{
+                    script{
+                        echo "Deploy image to Production environment..."
+                        kubernetesDeploy(
+                            configs: 'k8-prod.yml',
+                            kubeconfigId: 'k8-cred',
+                            enableConfigSubstitution: true 
+                        )
+                    }
+                }
+            }
+
+
+
+            
 
 
 
