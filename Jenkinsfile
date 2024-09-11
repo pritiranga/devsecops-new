@@ -92,7 +92,7 @@ pipeline{
                 // Creating namespaces for different environments on k8 cluster
                 steps{
                     echo "Preping staging and Production environment..."
-                    sshagent(['k8-config']){
+                    sshagent(['k8-ssh']){
                         sh 'ssh -o StrictHostKeyChecking=no ubuntu@13.60.248.189 "kubectl create ns staging && kubectl create ns prod"'
                     }
                 }   
