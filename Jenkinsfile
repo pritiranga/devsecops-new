@@ -72,16 +72,21 @@ pipeline{
                     }
 		        }
 	        }  
-            stage('Publishing Images to Dockerhub'){
-                //Pushing Docker images to DockerHub 
-                steps{
+            stage('Publishing Images to Dockerhub') {
+                steps {
                     echo "Pushing the image created to Dockerhub..."
-                    sshagent(['ssh']){
-                        withDockerRegistry([credentialsId: "dockerhub-creds", url: "https://index.docker.io/v1/"]){ 
-                            sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.170.225.76 "sudo chmod 666 /var/run/docker.sock && docker push $DOCKERHUB_USER/devsecops:latest && docker rmi -f devsecops:latest && docker rmi -f $DOCKERHUB_USER/devsecops:latest"'
-                        }
+                    sshagent(['ssh']) {
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                            sh '''
+                            ssh -o StrictHostKeyChecking=no ubuntu@16.170.225.76 "
+                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin &&
+                            docker push $DOCKERHUB_USER/devsecops:latest &&
+                            docker rmi -f devsecops:latest &&
+                            docker rmi -f $DOCKERHUB_USER/devsecops:latest"
+                            '''
                         }
                     }
+                }
             }
             stage('Creating Environments'){
                 // Creating namespaces for different environments on k8 cluster
