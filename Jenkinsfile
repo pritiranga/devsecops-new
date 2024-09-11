@@ -58,7 +58,7 @@ pipeline{
                     script {
                         // Run Checkov with the virtual environment and scan only the Dockerfile
                         sh '''
-                        source ~/myenv/bin/activate
+                        . /var/lib/jenkins/myenv/bin/activate
                         # Scan the Dockerfile specifically and skip a check
                         checkov -f /workspace/Dockerfile --skip-check CKV_DOCKER_3
                         deactivate
