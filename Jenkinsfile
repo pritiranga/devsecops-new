@@ -14,7 +14,8 @@ pipeline{
                 }
             }      
             stage ('Software Composition Analysis'){
-                //SCA using Dependency Check tool
+                //Install OWASP Dependency-Check plugin
+                //SCA using Dependency-Check tool
                 when {
                     expression{
                         params.enableCleanUp == false
