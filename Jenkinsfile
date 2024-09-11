@@ -32,7 +32,7 @@ pipeline{
                 
                 steps {
                     echo "Starting Statis Code Analysis using Sonar Qube Tool..."
-                    withSonarQubeEnv(credentialsId: 'sonar-token', installationName: 'SonarQubeScanner') {
+                    withSonarQubeEnv(credentialsId: 'sonarqube-token', installationName: 'SonarQubeScanner') {
                     sh './gradlew sonarqube \
                             -Dsonar.projectKey=TX-DevSecOps-Web \
                             -Dsonar.host.url=http://16.171.181.145:9000 \
