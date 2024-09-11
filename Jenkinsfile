@@ -58,7 +58,7 @@ pipeline{
                 //Building Docker Image
                 steps{
                     echo "Building the docker file..."
-                    sshagent(['security-server']){
+                    sshagent(['ssh']){
                         sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "export PATH=\$PATH:/opt/gradle/gradle-7.1.1/bin && cd /home/testing/tx-web && docker build -t devsecops . && docker tag devsecops:latest $DOCKERHUB_USER/devsecops:latest"'
                     }
                 }   
