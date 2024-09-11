@@ -66,9 +66,11 @@ pipeline{
             stage('Publishing Images to Dockerhub'){
                 //Pushing Docker images to DockerHub 
                 steps{
-                    echo "Pushing the image created to Nexus..."
+                    echo "Pushing the image created to Dockerhub..."
                     sshagent(['ssh']){
+                        withDockerRegistry([ credentialsId: "dockerhub-creds", url: ""]){ 
                             sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "docker push $DOCKERHUB_USER/devsecops:latest && docker rmi -f devsecops:latest && docker rmi -f $DOCKERHUB_USER/devsecops:latest"'
+                        }
                         }
                     }
                 }
