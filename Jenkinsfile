@@ -2,6 +2,7 @@ pipeline{
     agent any
     environment {
         DOCKERHUB = "dockerhub-creds"
+        DOCKERHUB_USER = "pritidevops"
     }
 //    parameters {
 //        booleanParam(name: 'enableCleanUp', defaultValue: false, description: 'Select to clean the environements')
@@ -53,19 +54,16 @@ pipeline{
                         }
                     }
                 }   
-                stage('Checkov Scan') {
-                steps {
-                    script {
-                        // Run Checkov with the virtual environment and scan only the Dockerfile
-                        sh '''
-                        . /var/lib/jenkins/myenv/bin/activate
-                        # Scan the Dockerfile specifically and skip a check
-                        checkov -f /workspace/Dockerfile --skip-check CKV_DOCKER_3
-                        deactivate
-                        '''
+            stage('Build'){
+                //Building Docker Image
+                steps{
+                    echo "Building the docker file..."
+                    sshagent(['security-server']){
+                        sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "export PATH=\$PATH:/opt/gradle/gradle-7.1.1/bin && cd /home/testing/tx-web && docker build -t devsecops . && docker tag devsecops:latest $DOCKERHUB_USER/devsecops:latest"'
                     }
-                }
-            }
+                }   
+            }  
+
 
 
 
