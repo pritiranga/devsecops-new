@@ -62,7 +62,16 @@ pipeline{
                     sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "export PATH=\$PATH:/opt/gradle/gradle-7.1.1/bin && cd devsecops && docker build -t devsecops . && docker tag devsecops:latest $DOCKERHUB_USER/devsecops:latest"'
                     }
                 }   
-            }  
+            } 
+            stage('Image Scanning') {
+                //Image scanning using Trivy tool
+		        steps{
+                    echo "Scanning the docker image using Trivy..."
+                    sshagent(['ssh']){
+                        sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "trivy image $DOCKERHUB_USER/devsecops:latest"'
+                    }
+		        }
+	        }  
             stage('Publishing Images to Dockerhub'){
                 //Pushing Docker images to DockerHub 
                 steps{
