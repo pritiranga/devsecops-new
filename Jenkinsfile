@@ -77,7 +77,7 @@ pipeline{
                 steps{
                     echo "Pushing the image created to Dockerhub..."
                     sshagent(['ssh']){
-                        withDockerRegistry([ credentialsId: "dockerhub-creds", url: ""]){ 
+                        withDockerRegistry([credentialsId: "dockerhub-creds", url: ""]){ 
                             sh 'sudo chmod 777 /var/run/docker.sock'
                             sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.170.225.76 "docker push $DOCKERHUB_USER/devsecops:latest && docker rmi -f devsecops:latest && docker rmi -f $DOCKERHUB_USER/devsecops:latest"'
                         }
