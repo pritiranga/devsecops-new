@@ -38,9 +38,22 @@ pipeline{
                             -Dsonar.projectKey=TX-DevSecOps-Web \
                             -Dsonar.host.url=http://16.171.181.145:9000 \
                             -Dsonar.login=sqp_1d24d8b51be47fa60aedd19ce7ffb1d1700e3153'
+                        } 
                     } 
-                } 
-            }
+                }
+                stage('Unit Testing') {
+                    //Unit Testing using JUnit
+                    steps{
+                        echo " Starting JUnit Unit tests..."
+                            junit(testResults: 'build/test-results/test/*.xml', allowEmptyResults : true, skipPublishingChecks: true)
+                    }
+                    post {
+                        success {
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+                        }
+                    }
+                }   
+
 
 
     } //stage closing
