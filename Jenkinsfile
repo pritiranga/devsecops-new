@@ -59,7 +59,7 @@ pipeline{
                 steps{
                     echo "Building the docker file..."
                     sshagent(['ssh']){
-                    sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "export PATH=\$PATH:/opt/gradle/gradle-7.1.1/bin && cd /var/lib/jenkins/workspace/devsecops && docker build -t devsecops . && docker tag devsecops:latest $DOCKERHUB_USER/devsecops:latest"'
+                    sh 'ssh -o StrictHostKeyChecking=no ubuntu@16.171.181.145 "export PATH=\$PATH:/opt/gradle/gradle-7.1.1/bin && cd devsecops && docker build -t devsecops . && docker tag devsecops:latest $DOCKERHUB_USER/devsecops:latest"'
                     }
                 }   
             }  
