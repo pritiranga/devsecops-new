@@ -59,7 +59,7 @@ pipeline{
                         echo "Scanning docker file using CheckOv Tool..."
                         //sh 'pip3 install checkov' 
                         //sh 'docker pull bridgecrew/checkov'
-                        sh 'sudo checkov -f Dockerfile --skip-check CKV_DOCKER_3 '        //skip USER in Dockerfile with CKV_DOCKER_3
+                        sh 'checkov -f Dockerfile --skip-check CKV_DOCKER_3 '        //skip USER in Dockerfile with CKV_DOCKER_3
                     }
                 } 
 
