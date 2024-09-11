@@ -37,7 +37,7 @@ pipeline{
                     sh 'chmod +x ./gradlew'
                     sh './gradlew sonarqube \
                             -Dsonar.projectKey=TX-DevSecOps-Web \
-                            -Dsonar.host.url=http://16.171.181.145:9000 \
+                            -Dsonar.host.url=http://16.170.225.76:9000 \
                             -Dsonar.login=sqp_1d24d8b51be47fa60aedd19ce7ffb1d1700e3153'
                         } 
                     } 
