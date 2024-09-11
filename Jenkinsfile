@@ -53,15 +53,19 @@ pipeline{
                         }
                     }
                 }   
-                stage ('Docker File Scan'){
-                //Dockerfile Scan using Checkov tool
-                    steps{
-                        echo "Scanning docker file using CheckOv Tool..."
-                        //sh 'pip3 install checkov' 
-                        //sh 'docker pull bridgecrew/checkov'
-                        sh 'checkov -f Dockerfile --skip-check CKV_DOCKER_3 '        //skip USER in Dockerfile with CKV_DOCKER_3
+                stage('Checkov Scan') {
+                steps {
+                    script {
+                        // Run Checkov with the virtual environment and scan only the Dockerfile
+                        sh '''
+                        source ~/myenv/bin/activate
+                        # Scan the Dockerfile specifically and skip a check
+                        checkov -f /workspace/Dockerfile --skip-check CKV_DOCKER_3
+                        deactivate
+                        '''
                     }
-                } 
+                }
+            }
 
 
 
