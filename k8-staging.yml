@@ -36,5 +36,5 @@ spec:
       targetPort: 9090
       nodePort: 32000
       
-  externalIPs:
-    - 192.168.6.99
+  # externalIPs:
+  #   - 192.168.6.99
