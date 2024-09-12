@@ -17,7 +17,7 @@ spec:
         - name: regcred
       containers:
         - name: devsec
-          image: 192.168.6.99:8082/devsecops:latest
+          image: pritidevops/devsecops:latest
           ports:
             - containerPort: 9090
 

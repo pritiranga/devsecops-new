@@ -61,7 +61,7 @@ pipeline{
                     }
                 
                 steps {
-                    echo "Starting Statis Code Analysis using Sonar Qube Tool..."
+                    echo "Starting Static Code Analysis using Sonar Qube Tool..."
                     withSonarQubeEnv(credentialsId: 'sonarqube-token', installationName: 'SonarQubeScanner') {
                     sh 'chmod +x ./gradlew'
                     sh './gradlew sonarqube \
@@ -72,24 +72,39 @@ pipeline{
                     } 
                 }
 
-                stage('Unit Testing') {
-                    //Unit Testing using JUnit
-                    when {
-                        expression{
-                            params.enableCleanUp == false
-                        }
-                    }
+            stage('Unit Testing') {
+                //Unit Testing using JUnit
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                                                }
+                }
 
-                    steps{
-                        echo " Starting JUnit Unit tests..."
-                            junit(testResults: 'build/test-results/test/*.xml', allowEmptyResults : true, skipPublishingChecks: true)
+                steps{
+                    echo " Starting JUnit Unit tests..."
+                        junit(testResults: 'build/test-results/test/*.xml', allowEmptyResults : true, skipPublishingChecks: true)
+                }
+                post {                        success {
+                          publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: '', useWrapperFileDirectly: true])
                     }
-                    post {
-                        success {
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: '', useWrapperFileDirectly: true])
-                        }
+                }
+            }   
+
+            stage ('Docker File Scan'){
+                //Dockerfile Scan using Checkov tool
+                when {
+                    expression{
+                        params.enableCleanUp == false
                     }
-                }   
+                }
+                steps{
+                    echo "Scanning docker file using CheckOv Tool..."
+                    //sh 'pip3 install checkov' 
+                    sh 'docker pull bridgecrew/checkov'
+                    sh 'docker run -v $(pwd):/workspace bridgecrew/checkov --skip-check CKV_DOCKER_3 -f /workspace/devsecops/Dockerfile'        //skip USER in Dockerfile with CKV_DOCKER_3
+                }
+            }
+
             stage('Build'){
                 //Building Docker Image
                 when {
