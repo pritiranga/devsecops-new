@@ -13,8 +13,6 @@ spec:
       labels:
         app: web
     spec:
-      imagePullSecrets:
-        - name: regcred
       containers:
         - name: devsec
           image: pritidevops/devsecops:latest
