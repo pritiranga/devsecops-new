@@ -15,6 +15,7 @@ pipeline{
                 }
             }      
             stage('Check if Environment exists') {
+                // checking staging and prod are already existed or not.
                 when {
                     expression{
                         params.enableCleanUp == true
@@ -201,7 +202,7 @@ pipeline{
                     }
                 }
             }
-            
+
             stage('Production Approval'){
                 //Approval for deployment on production environment
                 when {
