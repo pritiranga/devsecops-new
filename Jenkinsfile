@@ -97,7 +97,7 @@ pipeline{
                     }
                 }   
             }
-                stage('Staging Deployment'){
+            stage('Staging Deployment'){
                 //Application deploying on Staging server
                 steps{
                     echo "Deploy image to Staging environment..."
@@ -164,6 +164,46 @@ pipeline{
                     }
                 }
             }
+            stage('Clean Up Approval'){
+                when {
+                    expression{
+                        params.enableCleanUp == true
+                    }
+                }
+                steps{              
+                    script {
+                        timeout(time: 10, unit: 'MINUTES'){
+                            input ('Proceed with Environment CleanUp?')
+                        }
+                    }        
+                } 
+            }
+
+
+            stage('Monitoring') {
+                //Monitoring Dashboard Details
+                steps{
+                    script{
+                        echo " Monitor Deployments here: http://192.168.6.99:3000/"
+                    }     
+                }
+            }
+
+            stage('Cleaning Workspace') {
+                //Deleting staging and prod environments
+                when {
+                    expression{
+                        params.enableCleanUp == true
+                    }
+                }
+                steps{
+                        sshagent(['k8-ssh']){
+                            sh 'ssh -o StrictHostKeyChecking=no ubuntu@13.60.248.189 "kubectl delete ns staging prod"'
+                        }
+                }
+            }
+
+
 
 
 
