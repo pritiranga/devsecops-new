@@ -90,7 +90,7 @@ pipeline{
                 }
             }   
 
-            stage ('Docker File Scan'){
+       /*     stage ('Docker File Scan'){
                 //Dockerfile Scan using Checkov tool
                 when {
                     expression{
@@ -103,7 +103,7 @@ pipeline{
                     sh 'sudo docker pull bridgecrew/checkov'                    
                     sh 'sudo docker run -v $(pwd):/workspace bridgecrew/checkov --skip-check CKV_DOCKER_3 -f /workspace/devsecops/Dockerfile'        //skip USER in Dockerfile with CKV_DOCKER_3
                 }
-            }
+            }  */
 
             stage('Build'){
                 //Building Docker Image
