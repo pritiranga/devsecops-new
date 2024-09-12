@@ -4,9 +4,9 @@ pipeline{
         DOCKERHUB = "dockerhub-creds"
         DOCKERHUB_USER = "pritidevops"
     }
-//    parameters {
-//        booleanParam(name: 'enableCleanUp', defaultValue: false, description: 'Select to clean the environements')
-//    }
+    parameters {
+        booleanParam(name: 'enableCleanUp', defaultValue: false, description: 'Select to clean the environements')
+    }
     stages {
             stage('Checkout') {
                 steps {
@@ -14,7 +14,28 @@ pipeline{
                     checkout scm
                 }
             }      
+            stage('Check if Environment exists') {
+                when {
+                    expression{
+                        params.enableCleanUp == true
+                    }
+                }
+                steps {
+                    echo "Checking is the environments exists before starting with cleanup..."
+                    sshagent(['k8-ssh']){
+                            sh 'ssh -o StrictHostKeyChecking=no ubuntu@13.60.248.189 "kubectl get namespace staging prod"'
+                        }
+                }
+            } 
+
             stage ('Software Composition Analysis'){
+                
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+
                 //Install OWASP Dependency-Check plugin
                 //SCA using Dependency-Check tool
                 steps {
@@ -25,8 +46,15 @@ pipeline{
                     }    
                 }
             }
+
             stage('SonarQube Analysis') {
                 //Static Code Analysis using Sonarqube tool
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+
                 environment {
                         SCANNER_HOME = tool 'SonarQubeScanner'
                     }
@@ -42,8 +70,15 @@ pipeline{
                         } 
                     } 
                 }
+
                 stage('Unit Testing') {
                     //Unit Testing using JUnit
+                    when {
+                        expression{
+                            params.enableCleanUp == false
+                        }
+                    }
+
                     steps{
                         echo " Starting JUnit Unit tests..."
                             junit(testResults: 'build/test-results/test/*.xml', allowEmptyResults : true, skipPublishingChecks: true)
@@ -56,6 +91,12 @@ pipeline{
                 }   
             stage('Build'){
                 //Building Docker Image
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+
                 steps{
                     echo "Building the docker file..."
                     sshagent(['ssh']){
@@ -63,8 +104,15 @@ pipeline{
                     }
                 }   
             } 
+
             stage('Image Scanning') {
                 //Image scanning using Trivy tool
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+
 		        steps{
                     echo "Scanning the docker image using Trivy..."
                     sshagent(['ssh']){
@@ -72,7 +120,14 @@ pipeline{
                     }
 		        }
 	        }  
+
             stage('Publishing Images to Dockerhub') {
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+
                 steps {
                     echo "Pushing the image created to Dockerhub..."
                     sshagent(['ssh']) {
@@ -88,8 +143,15 @@ pipeline{
                     }
                 }
             }
+
             stage('Creating Environments'){
                 // Creating namespaces for different environments on k8 cluster
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+
                 steps{
                     echo "Preping staging and Production environment..."
                     sshagent(['k8-ssh']){
@@ -97,8 +159,15 @@ pipeline{
                     }
                 }   
             }
+
             stage('Staging Deployment'){
                 //Application deploying on Staging server
+                when {
+                    expression{
+                        params.enableCleanUp == false
+                    }
+                }
+
                 steps{
                     echo "Deploy image to Staging environment..."
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
@@ -113,6 +182,7 @@ pipeline{
                     )
                 }
             }
+
             stage('Web Application Scanning'){
                 //Web Application scanning using ZAP        
                 when {
@@ -123,14 +193,15 @@ pipeline{
                 steps{
                     echo "Performing DAST Scan on app using ZAP tool..."
                     catchError(buildResult: 'Success', stageResult: 'Success'){
-                    sleep time: 30, unit: 'SECONDS'
-                    sshagent(['dev'])
-                    {
-                        sh 'ssh -o StrictHostKeyChecking=no testing@192.168.6.99 "docker pull owasp/zap2docker-stable && docker run -t owasp/zap2docker-stable zap-baseline.py -t http://192.168.6.68:32000/VulnerableApp/ && docker rmi -f owasp/zap2docker-stable"'
-                    }
+                        sleep time: 30, unit: 'SECONDS'
+                        sshagent(['zap'])
+                        {
+                            sh 'ssh -o StrictHostKeyChecking=no testing@192.168.6.99 "docker pull owasp/zap2docker-stable && docker run -t owasp/zap2docker-stable zap-baseline.py -t http://192.168.6.68:32000/VulnerableApp/ && docker rmi -f owasp/zap2docker-stable"'
+                        }
                     }
                 }
             }
+            
             stage('Production Approval'){
                 //Approval for deployment on production environment
                 when {
@@ -146,6 +217,7 @@ pipeline{
                     }        
                 } 
             }
+
             stage('Production Deployment'){
                 //Application deploying on production server
                 when {
@@ -158,12 +230,13 @@ pipeline{
                         echo "Deploy image to Production environment..."
                         kubernetesDeploy(
                             configs: 'k8-prod.yml',
-                            kubeconfigId: 'k8-cred',
+                            kubeconfigId: 'k8-config',
                             enableConfigSubstitution: true 
                         )
                     }
                 }
             }
+
             stage('Clean Up Approval'){
                 when {
                     expression{
