@@ -100,8 +100,8 @@ pipeline{
                 steps{
                     echo "Scanning docker file using CheckOv Tool..."
                     //sh 'pip3 install checkov' 
-                    sh 'docker pull bridgecrew/checkov'                    
-                    sh 'docker run -v $(pwd):/workspace bridgecrew/checkov --skip-check CKV_DOCKER_3 -f /workspace/devsecops/Dockerfile'        //skip USER in Dockerfile with CKV_DOCKER_3
+                    sh 'sudo docker pull bridgecrew/checkov'                    
+                    sh 'sudo docker run -v $(pwd):/workspace bridgecrew/checkov --skip-check CKV_DOCKER_3 -f /workspace/devsecops/Dockerfile'        //skip USER in Dockerfile with CKV_DOCKER_3
                 }
             }
 
